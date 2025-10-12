@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  getFirestore, 
   collection, 
   query, 
   where, 
@@ -13,17 +12,14 @@ import {
   Timestamp 
 } from "firebase/firestore";
 import { useAuth } from './contexts/AuthContext';
-import { markDocumentAsDone, problematic_inc, edited_inc } from './utils/analytics';
+import { markDocumentAsDone, problematic_inc } from './utils/analytics';
 import { 
   Lock, 
   Clock, 
   User, 
   FileText, 
-  BookOpen, 
   Globe, 
-  MessageSquare, 
   Hash, 
-  Languages,
   Heart,
   Lightbulb,
   Quote,
@@ -31,9 +27,7 @@ import {
   CheckCircle,
   Edit3
 } from 'lucide-react';
-
-// Initialize Firestore
-const db = getFirestore();
+import { db } from "./firebase/config";
 
 const Review = () => {
   const navigate = useNavigate();
@@ -307,9 +301,9 @@ const Review = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+        <div className="text-center text-slate-500">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-400 mx-auto mb-4"></div>
+          <p className="text-sm tracking-wide uppercase text-slate-400">Preparing workspace</p>
         </div>
       </div>
     );
@@ -318,10 +312,10 @@ const Review = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">
-            {lockingInProgress ? "Locking document..." : "Finding available document..."}
+        <div className="text-center text-slate-500">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-400 mx-auto mb-4"></div>
+          <p className="text-sm tracking-wide uppercase text-slate-400">
+            {lockingInProgress ? "Locking document" : "Finding available document"}
           </p>
         </div>
       </div>
@@ -331,15 +325,17 @@ const Review = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
-          <div className="flex items-center mb-3">
-            <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
-            <h3 className="text-lg font-semibold text-red-800">Error</h3>
+        <div className="max-w-md w-full rounded-2xl border border-red-100 bg-white p-6 shadow">
+          <div className="flex items-center gap-3 mb-4 text-red-600">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50">
+              <AlertTriangle className="h-5 w-5" />
+            </span>
+            <h3 className="text-lg font-semibold">Something went wrong</h3>
           </div>
-          <p className="text-red-600">{error}</p>
+          <p className="text-sm text-slate-600 leading-relaxed">{error}</p>
           <button
             onClick={findAndLockDocument}
-            className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+            className="mt-6 inline-flex items-center justify-center rounded-full bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600"
           >
             Try Again
           </button>
@@ -350,110 +346,109 @@ const Review = () => {
 
   if (!document) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">No document available for review</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center text-slate-500">
+          <FileText className="h-16 w-16 text-indigo-400 mx-auto mb-4" />
+          <p className="text-slate-500">No document available for review</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen font-hind-siliguri">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        {/* <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Proverb Review</h1>
-          <p className="text-gray-600 text-base md:text-lg">Academic review and validation of Bengali proverbs</p>
-        </div> */}
+    <div className="relative min-h-screen font-hind-siliguri bg-gray-50 text-slate-900">
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-indigo-100 via-purple-50 to-blue-100" />
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="mb-8 flex flex-col gap-3">
+          <span className="inline-flex items-center gap-2 self-start rounded-full border border-indigo-100 bg-white px-3 py-1 text-xs uppercase tracking-[0.25em] text-indigo-600">
+            <Lock className="h-4 w-4" /> Review Mode
+          </span>
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-slate-900">Curate today&rsquo;s proverb insight</h1>
+          <p className="text-sm md:text-base text-slate-600">Lock a proverb, refine the meaning, and help us ship a precise cultural record.</p>
+        </div>
 
-        {/* Document Lock Status */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 mb-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 md:p-6 mb-8 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 text-sm text-slate-600">
+              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                  <Lock className="h-3.5 w-3.5" />
+                </span>
+                Document locked for you
+              </div>
               <div className="flex items-center gap-2">
-                <Lock className="h-5 w-5 text-green-600" />
-                <span className="text-sm font-medium text-green-700">Document Locked</span>
+                <User className="h-4 w-4 text-slate-400" />
+                <span className="font-mono text-xs text-slate-500">{document.locked_by?.replace(/_DOT_/g, '.')}</span>
               </div>
-              <div className="flex items-center gap-2 text-gray-600">
-                <User className="h-4 w-4" />
-                <span className="text-sm break-all">{document.locked_by?.replace(/_DOT_/g, '.')}</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-600">
-                <Clock className="h-4 w-4" />
-                <span className="text-sm">
-                  {document.locked_at?.toDate ? 
-                    document.locked_at.toDate().toLocaleString() : 
-                    'Just now'
-                  }
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-slate-400" />
+                <span className="text-xs text-slate-500">
+                  {document.locked_at?.toDate ? document.locked_at.toDate().toLocaleString() : 'Just now'}
                 </span>
               </div>
             </div>
-            <div className="text-sm text-gray-500">
-              Document ID: <span className="font-mono bg-gray-100 px-2 py-1 rounded text-xs">{document.id}</span>
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <span className="hidden sm:inline">Doc ID</span>
+              <span className="rounded-md border border-gray-200 bg-slate-100 px-3 py-1 font-mono">{document.id}</span>
             </div>
           </div>
         </div>
 
-        {/* Proverb Main Content */}
-        <div className="bg-white rounded-xl border border-gray-200 p-8 mb-6">
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <Quote className="h-8 w-8 text-blue-600" />
-              <h2 className="text-2xl font-bold text-gray-800">Bengali Proverb</h2>
-            </div>
-            
-            {/* Bengali Text */}
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-6 mb-4 rounded-r-lg">
-              <p className="text-3xl font-bold text-gray-800 mb-2 font-hind-siliguri">
-                {document.proverb?.text}
-              </p>
-              <p className="text-lg text-gray-600 italic">
-                {document.proverb?.transliteration}
-              </p>
+        <div className="rounded-3xl border border-gray-200 bg-white p-8 mb-8 shadow-lg">
+          <div className="text-center space-y-6">
+            <div className="flex items-center justify-center gap-3">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 text-indigo-500">
+                <Quote className="h-6 w-6" />
+              </span>
+              <h2 className="text-2xl font-semibold text-slate-900">Bengali proverb under review</h2>
             </div>
 
-            {/* English Translation */}
-            <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg">
-              <p className="text-lg font-semibold text-gray-800">
-                "{document.proverb?.literal_translation}"
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Academic Analysis Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          
-          {/* Semantic Analysis */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Lightbulb className="h-6 w-6 text-yellow-600" />
-              <h3 className="text-xl font-semibold text-gray-800">Semantic Analysis</h3>
-            </div>
             <div className="space-y-4">
-              <div>
-                <h4 className="font-semibold text-gray-700 mb-2">Figurative Meaning</h4>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {document.proverb?.figurative_meaning}
+              <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-6 text-left">
+                <p className="text-3xl font-bold text-slate-900 mb-3 leading-tight">
+                  {document.proverb?.text}
+                </p>
+                <p className="text-lg text-indigo-700 italic">
+                  {document.proverb?.transliteration}
                 </p>
               </div>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-left">
+                <p className="text-lg font-medium text-emerald-700">
+                  &ldquo;{document.proverb?.literal_translation}&rdquo;
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-5 text-indigo-600">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50">
+                <Lightbulb className="h-5 w-5" />
+              </span>
+              <h3 className="text-xl font-semibold text-slate-900">Semantic analysis</h3>
+            </div>
+            <div className="space-y-5 text-sm text-slate-600">
               <div>
-                <h4 className="font-semibold text-gray-700 mb-2">Themes</h4>
+                <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-2">Figurative meaning</h4>
+                <p className="leading-relaxed text-slate-700">{document.proverb?.figurative_meaning}</p>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-2">Themes</h4>
                 <div className="flex flex-wrap gap-2">
                   {document.proverb?.semantic_theme?.map((theme, index) => (
-                    <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                    <span key={index} className="rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs text-indigo-600">
                       {theme}
                     </span>
                   ))}
                 </div>
               </div>
               <div>
-                <h4 className="font-semibold text-gray-700 mb-2">Context</h4>
+                <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-2">Context cues</h4>
                 <div className="flex flex-wrap gap-2">
                   {document.proverb?.context_tags?.map((tag, index) => (
-                    <span key={index} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+                    <span key={index} className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs text-slate-600">
                       {tag}
                     </span>
                   ))}
@@ -462,45 +457,46 @@ const Review = () => {
             </div>
           </div>
 
-          {/* Linguistic Features */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Hash className="h-6 w-6 text-purple-600" />
-              <h3 className="text-xl font-semibold text-gray-800">Linguistic Features</h3>
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-5 text-purple-600">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-50">
+                <Hash className="h-5 w-5" />
+              </span>
+              <h3 className="text-xl font-semibold text-slate-900">Linguistic features</h3>
             </div>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="font-medium text-gray-700">Rhyme Pattern:</span>
-                <span className="text-gray-600">{document.linguistic_features?.rhyme_pattern}</span>
+            <div className="space-y-3 text-sm text-slate-600">
+              <div className="flex justify-between gap-4">
+                <span className="text-slate-500">Rhyme pattern</span>
+                <span className="text-right text-slate-700">{document.linguistic_features?.rhyme_pattern}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="font-medium text-gray-700">Meter Type:</span>
-                <span className="text-gray-600">{document.linguistic_features?.meter_type}</span>
+              <div className="flex justify-between gap-4">
+                <span className="text-slate-500">Meter type</span>
+                <span className="text-right text-slate-700">{document.linguistic_features?.meter_type}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="font-medium text-gray-700">Structure:</span>
-                <span className="text-gray-600">{document.linguistic_features?.syntactic_structure}</span>
+              <div className="flex justify-between gap-4">
+                <span className="text-slate-500">Structure</span>
+                <span className="text-right text-slate-700">{document.linguistic_features?.syntactic_structure}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="font-medium text-gray-700">Metaphor Type:</span>
-                <span className="text-gray-600">{document.linguistic_features?.metaphor_type}</span>
+              <div className="flex justify-between gap-4">
+                <span className="text-slate-500">Metaphor type</span>
+                <span className="text-right text-slate-700">{document.linguistic_features?.metaphor_type}</span>
               </div>
-              
+
               {document.linguistic_features?.semantic_roles && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <h4 className="font-semibold text-gray-700 mb-2">Semantic Roles</h4>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                      <span className="text-gray-600 font-medium">Agent:</span>
-                      <span className="font-mono bg-gray-100 px-2 py-1 rounded text-xs break-all">{document.linguistic_features.semantic_roles.agent}</span>
+                <div className="mt-5 rounded-xl border border-gray-200 bg-slate-50 p-4">
+                  <h4 className="text-xs uppercase tracking-wider text-slate-500 mb-3">Semantic roles</h4>
+                  <div className="space-y-3 text-xs text-slate-700">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <span className="text-slate-500">Agent</span>
+                      <span className="font-mono rounded-lg bg-white px-2 py-1 text-slate-700 border border-slate-200">{document.linguistic_features.semantic_roles.agent}</span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                      <span className="text-gray-600 font-medium">Action:</span>
-                      <span className="font-mono bg-gray-100 px-2 py-1 rounded text-xs break-all">{document.linguistic_features.semantic_roles.action}</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <span className="text-slate-500">Action</span>
+                      <span className="font-mono rounded-lg bg-white px-2 py-1 text-slate-700 border border-slate-200">{document.linguistic_features.semantic_roles.action}</span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                      <span className="text-gray-600 font-medium">Cause:</span>
-                      <span className="font-mono bg-gray-100 px-2 py-1 rounded text-xs break-all">{document.linguistic_features.semantic_roles.cause}</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <span className="text-slate-500">Cause</span>
+                      <span className="font-mono rounded-lg bg-white px-2 py-1 text-slate-700 border border-slate-200">{document.linguistic_features.semantic_roles.cause}</span>
                     </div>
                   </div>
                 </div>
@@ -509,66 +505,52 @@ const Review = () => {
           </div>
         </div>
 
-        {/* Annotations */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Heart className="h-6 w-6 text-red-600" />
-            <h3 className="text-xl font-semibold text-gray-800">Cultural Annotations</h3>
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 mb-8 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 text-rose-500">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-50">
+              <Heart className="h-5 w-5" />
+            </span>
+            <h3 className="text-xl font-semibold text-slate-900">Cultural annotations</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-600">
+            <div className="space-y-5">
               <div>
-                <h4 className="font-semibold text-gray-700 mb-2">Moral Lesson</h4>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {document.annotations?.moral_lesson}
-                </p>
+                <h4 className="text-xs uppercase tracking-wider text-slate-500 mb-2">Moral lesson</h4>
+                <p className="leading-relaxed text-slate-700">{document.annotations?.moral_lesson}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-semibold text-gray-700 mb-1">Emotion</h4>
-                  <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm">
-                    {document.annotations?.emotion}
-                  </span>
+                <div className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-center">
+                  <h4 className="text-[11px] uppercase tracking-wider text-amber-700 mb-1">Emotion</h4>
+                  <span className="text-sm font-medium text-amber-700">{document.annotations?.emotion}</span>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-700 mb-1">Register</h4>
-                  <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
-                    {document.annotations?.register}
-                  </span>
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-center">
+                  <h4 className="text-[11px] uppercase tracking-wider text-emerald-700 mb-1">Register</h4>
+                  <span className="text-sm font-medium text-emerald-700">{document.annotations?.register}</span>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-semibold text-gray-700 mb-1">Usage Frequency</h4>
-                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                    {document.annotations?.usage_frequency}
-                  </span>
+                <div className="rounded-xl border border-sky-100 bg-sky-50 p-3 text-center">
+                  <h4 className="text-[11px] uppercase tracking-wider text-sky-700 mb-1">Usage frequency</h4>
+                  <span className="text-sm font-medium text-sky-700">{document.annotations?.usage_frequency}</span>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-700 mb-1">Popularity Index</h4>
-                  <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
-                    {document.annotations?.popularity_index}
-                  </span>
+                <div className="rounded-xl border border-purple-100 bg-purple-50 p-3 text-center">
+                  <h4 className="text-[11px] uppercase tracking-wider text-purple-700 mb-1">Popularity index</h4>
+                  <span className="text-sm font-medium text-purple-700">{document.annotations?.popularity_index}</span>
                 </div>
               </div>
             </div>
-            
-            {/* Example Sentences */}
+
             <div>
-              <h4 className="font-semibold text-gray-700 mb-3">Usage Examples</h4>
+              <h4 className="text-xs uppercase tracking-wider text-slate-500 mb-3">Usage examples</h4>
               <div className="space-y-4">
                 {document.annotations?.example_sentences?.map((example, index) => (
-                  <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                    <div className="mb-2">
-                      <p className="text-sm font-medium text-gray-800 font-hind-siliguri">
-                        {example.bangla}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 italic">
-                        {example.english}
-                      </p>
-                    </div>
+                  <div key={index} className="rounded-2xl border border-gray-200 bg-slate-50 p-4">
+                    <p className="text-sm font-medium text-slate-900 mb-2 leading-relaxed">
+                      {example.bangla}
+                    </p>
+                    <p className="text-xs text-slate-500 italic">
+                      {example.english}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -576,99 +558,96 @@ const Review = () => {
           </div>
         </div>
 
-        {/* Cross-Cultural Equivalents */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Globe className="h-6 w-6 text-green-600" />
-            <h3 className="text-xl font-semibold text-gray-800">Cross-Cultural Analysis</h3>
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 mb-10 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 text-green-600">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50">
+              <Globe className="h-5 w-5" />
+            </span>
+            <h3 className="text-xl font-semibold text-slate-900">Cross-cultural parallels</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-600">
             <div>
-              <h4 className="font-semibold text-gray-700 mb-3">Similar Proverbs</h4>
-              <div className="space-y-2">
+              <h4 className="text-xs uppercase tracking-wider text-slate-500 mb-3">Similar proverbs</h4>
+              <div className="space-y-3">
                 {document.cross_cultural?.similar_proverbs?.map((proverb, index) => (
-                  <div key={index} className="bg-gray-50 p-3 rounded text-sm">
+                  <div key={index} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
                     {proverb}
                   </div>
                 ))}
               </div>
             </div>
-            <div>
-              <h4 className="font-semibold text-gray-700 mb-3">Language Equivalents</h4>
-              <div className="space-y-3">
-                <div>
-                  <span className="font-medium text-gray-700">English:</span>
-                  <p className="text-gray-600 text-sm">{document.cross_cultural?.english_equivalent}</p>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Hindi:</span>
-                  <p className="text-gray-600 text-sm">{document.cross_cultural?.hindi_equivalent}</p>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Arabic:</span>
-                  <p className="text-gray-600 text-sm">{document.cross_cultural?.arabic_equivalent}</p>
-                </div>
+            <div className="space-y-4">
+              <div>
+                <span className="text-xs uppercase tracking-wider text-slate-500">English</span>
+                <p className="mt-1 text-slate-700">{document.cross_cultural?.english_equivalent}</p>
+              </div>
+              <div>
+                <span className="text-xs uppercase tracking-wider text-slate-500">Hindi</span>
+                <p className="mt-1 text-slate-700">{document.cross_cultural?.hindi_equivalent}</p>
+              </div>
+              <div>
+                <span className="text-xs uppercase tracking-wider text-slate-500">Arabic</span>
+                <p className="mt-1 text-slate-700">{document.cross_cultural?.arabic_equivalent}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
-            <button 
+        <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-center">
+            <button
               onClick={handleMarkAsDone}
               disabled={processingAction}
-              className={`flex items-center gap-2 font-semibold py-3 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 ${
-                processingAction 
-                  ? 'bg-gray-400 cursor-not-allowed text-white' 
-                  : 'bg-green-600 hover:bg-green-700 text-white'
+              className={`flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold transition-shadow ${
+                processingAction
+                  ? 'cursor-not-allowed bg-slate-100 text-slate-400'
+                  : 'bg-emerald-600 text-white shadow hover:shadow-lg'
               }`}
             >
               {processingAction ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Processing...</span>
+                  <span>Processing</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle size={20} />
-                  <span>Mark as Done</span>
+                  <CheckCircle size={18} />
+                  <span>Mark as done</span>
                 </>
               )}
             </button>
-            <button 
+            <button
               onClick={handleMarkAsProblematic}
               disabled={processingAction}
-              className={`flex items-center gap-2 font-semibold py-3 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 ${
-                processingAction 
-                  ? 'bg-gray-400 cursor-not-allowed text-white' 
-                  : 'bg-red-600 hover:bg-red-700 text-white'
+              className={`flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold transition-shadow ${
+                processingAction
+                  ? 'cursor-not-allowed bg-slate-100 text-slate-400'
+                  : 'bg-rose-600 text-white shadow hover:shadow-lg'
               }`}
             >
               {processingAction ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Processing...</span>
+                  <span>Processing</span>
                 </>
               ) : (
                 <>
-                  <AlertTriangle size={20} />
-                  <span>Mark as Problematic</span>
+                  <AlertTriangle size={18} />
+                  <span>Flag as problematic</span>
                 </>
               )}
             </button>
-            <button 
+            <button
               onClick={() => navigate(`/edit/${document.id}`)}
               disabled={processingAction}
-              className={`flex items-center gap-2 font-semibold py-3 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 ${
-                processingAction 
-                  ? 'bg-gray-400 cursor-not-allowed text-white' 
-                  : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+              className={`flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold transition-shadow ${
+                processingAction
+                  ? 'cursor-not-allowed bg-slate-100 text-slate-400'
+                  : 'bg-amber-400 text-slate-900 shadow hover:shadow-lg'
               }`}
             >
-              <Edit3 size={20} />
-              <span>Edit</span>
+              <Edit3 size={18} />
+              <span>Edit entry</span>
             </button>
           </div>
         </div>

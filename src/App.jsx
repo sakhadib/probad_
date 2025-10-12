@@ -4,7 +4,9 @@ import Login from './login.jsx';
 import Dashboard from './dashboard.jsx';
 import Review from './review.jsx';
 import Edit from './edit.jsx';
+import Home from './home.jsx';
 import Header from './components/Header.jsx';
+import Footer from './components/Footer.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import './App.css';
@@ -16,7 +18,7 @@ function App() {
         <div className="App">
           <Header />
           <Routes>
-            <Route path="/" element={<Navigate to="/signup" replace />} />
+            <Route path="/" element={<Home />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/login" element={<Login />} />
             <Route 
@@ -51,7 +53,9 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          <Footer />
         </div>
       </Router>
     </AuthProvider>
