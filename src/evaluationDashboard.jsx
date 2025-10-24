@@ -20,7 +20,7 @@ const EvaluationDashboard = () => {
   const [error, setError] = useState(null);
 
   const handleStartEvaluation = () => {
-    navigate('/evaluation');
+    navigate('/evaluate');
   };
 
   useEffect(() => {

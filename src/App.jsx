@@ -3,6 +3,7 @@ import SignUp from './signup.jsx';
 import Login from './login.jsx';
 import Dashboard from './dashboard.jsx';
 import EvaluationDashboard from './evaluationDashboard.jsx';
+import Evaluate from './evaluate.jsx';
 import Review from './review.jsx';
 import Edit from './edit.jsx';
 import Home from './home.jsx';
@@ -36,6 +37,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <EvaluationDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/evaluate" 
+              element={
+                <ProtectedRoute>
+                  <Evaluate />
                 </ProtectedRoute>
               } 
             />
