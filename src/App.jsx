@@ -7,6 +7,7 @@ import Edit from './edit.jsx';
 import Home from './home.jsx';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
+import TextTranslator from './components/TextTranslator.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import './App.css';
@@ -56,6 +57,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <Footer />
+          <TextTranslator />
         </div>
       </Router>
     </AuthProvider>

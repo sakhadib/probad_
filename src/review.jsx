@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import { useAuth } from './contexts/AuthContext';
 import { markDocumentAsDone, problematic_inc } from './utils/analytics';
+import { createEvalDocument } from './utils/evaluator';
 import { 
   Lock, 
   Clock, 
@@ -25,7 +26,8 @@ import {
   Quote,
   AlertTriangle,
   CheckCircle,
-  Edit3
+  Edit3,
+  Send
 } from 'lucide-react';
 import { db } from "./firebase/config";
 
@@ -202,6 +204,41 @@ const Review = () => {
       } catch (revertError) {
         console.error("Failed to revert document status:", revertError);
       }
+    } finally {
+      setProcessingAction(false);
+    }
+  };
+
+
+
+  // Function to send document to evaluation
+  const handleSendToEvaluation = async () => {
+    if (!document || !user) {
+      setError("Document or user not available");
+      return;
+    }
+
+    try {
+      setProcessingAction(true);
+      setError(null);
+
+      // Step 1: Create eval document
+      await createEvalDocument(document);
+
+      // Step 2: Update document's taken field to true
+      const docRef = doc(db, "probad", document.id);
+      await updateDoc(docRef, {
+        taken: true
+      });
+
+      // Update local state
+      setDocument(prev => ({ ...prev, taken: true }));
+
+      console.log(`Document ${document.id} sent to evaluation`);
+
+    } catch (error) {
+      console.error("Error sending to evaluation:", error);
+      setError(`Failed to send to evaluation: ${error.message}`);
     } finally {
       setProcessingAction(false);
     }
@@ -648,6 +685,31 @@ const Review = () => {
             >
               <Edit3 size={18} />
               <span>Edit entry</span>
+            </button>
+            <button
+              onClick={handleSendToEvaluation}
+              disabled={processingAction || document.taken}
+              className={`flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold transition-shadow ${
+                processingAction || document.taken
+                  ? 'cursor-not-allowed bg-slate-100 text-slate-400'
+                  : 'bg-blue-600 text-white shadow hover:shadow-lg'
+              }`}
+            >
+              {processingAction ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Processing</span>
+                </>
+              ) : document.taken ? (
+                <>
+                  <span>Already in evaluation</span>
+                </>
+              ) : (
+                <>
+                  <Send size={18} />
+                  <span>Send to evaluation</span>
+                </>
+              )}
             </button>
           </div>
         </div>
