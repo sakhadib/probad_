@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import SignUp from './signup.jsx';
 import Login from './login.jsx';
 import Dashboard from './dashboard.jsx';
+import EvaluationDashboard from './evaluationDashboard.jsx';
 import Review from './review.jsx';
 import Edit from './edit.jsx';
 import Home from './home.jsx';
@@ -27,6 +28,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/evaluation-dashboard" 
+              element={
+                <ProtectedRoute>
+                  <EvaluationDashboard />
                 </ProtectedRoute>
               } 
             />
