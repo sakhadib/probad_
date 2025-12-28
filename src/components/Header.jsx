@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { auth } from '../firebase/config';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { signOut } from 'firebase/auth';
-import { BarChart3, LogOut, LogIn, UserPlus, Menu, X, Layers, Brain } from 'lucide-react';
+import { BarChart3, LogOut, LogIn, UserPlus, Menu, X, Layers, Brain, List } from 'lucide-react';
 
 const Header = () => {
   const [user] = useAuthState(auth);
@@ -29,6 +29,7 @@ const Header = () => {
     ? [
         { to: '/dashboard', label: 'Dashboard', icon: BarChart3 },
         { to: '/evaluation-dashboard', label: 'Evaluation', icon: Brain },
+        { to: '/manage-evaluation', label: 'Manage Eval', icon: List },
         { to: '/review', label: 'Review Queue', icon: Layers }
       ]
     : [];

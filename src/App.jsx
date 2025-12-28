@@ -7,6 +7,7 @@ import Evaluate from './evaluate.jsx';
 import Review from './review.jsx';
 import Edit from './edit.jsx';
 import Home from './home.jsx';
+import ManageEvaluation from './manageEvaluation.jsx';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import TextTranslator from './components/TextTranslator.jsx';
@@ -45,6 +46,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Evaluate />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/manage-evaluation" 
+              element={
+                <ProtectedRoute>
+                  <ManageEvaluation />
                 </ProtectedRoute>
               } 
             />
