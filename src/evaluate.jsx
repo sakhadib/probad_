@@ -9,6 +9,7 @@ import {
   getDocs,
   doc,
   updateDoc,
+  deleteDoc,
   Timestamp
 } from "firebase/firestore";
 import { useAuth } from './contexts/AuthContext';
@@ -25,7 +26,8 @@ import {
   Hash,
   Heart,
   Globe,
-  Brain
+  Brain,
+  Trash2
 } from 'lucide-react';
 import { db } from "./firebase/config";
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -46,6 +48,79 @@ const Evaluate = () => {
   // Helper function to sanitize email for Firebase document field
   const sanitizeEmail = (email) => {
     return email.replace(/\./g, '_DOT_');
+  };
+
+  // Helper function to check if any predictions have been fetched
+  const hasAnyPredictionsFetched = (document) => {
+    if (!document || !document.predictions) return false;
+    return document.predictions.some(pred => 
+      pred.prediction !== null || pred.fetch === true
+    );
+  };
+
+  // Function to remove document from evaluation
+  const handleRemoveFromEvaluation = async () => {
+    if (!document || !user) {
+      setError("Document or user not available");
+      return;
+    }
+
+    // Check if any predictions have been fetched
+    if (hasAnyPredictionsFetched(document)) {
+      setError("Cannot remove: At least one model prediction has been fetched. You can only remove before fetching any predictions.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Are you sure you want to remove this proverb from the evaluation set? This will delete the evaluation document and reset its status."
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setProcessingAction(true);
+      setError(null);
+
+      // Step 1: Delete the document from eval collection
+      await deleteDoc(doc(db, "eval", document.id));
+      console.log(`Deleted eval document: ${document.id}`);
+
+      // Step 2: Find the original probad document using probad_id or other identifier
+      // The eval doc should have all the fields from the original probad doc
+      // We need to find it in probad collection and set taken to false
+      if (document.probad_id) {
+        const probadRef = doc(db, "probad", document.probad_id);
+        await updateDoc(probadRef, {
+          taken: false
+        });
+        console.log(`Reset taken field for probad: ${document.probad_id}`);
+      } else {
+        // If no probad_id, we need to search by matching fields
+        // This is a fallback - ideally probad_id should be stored
+        const probadQuery = query(
+          collection(db, "probad"),
+          where("proverb.text", "==", document.proverb?.text),
+          limit(1)
+        );
+        const probadSnapshot = await getDocs(probadQuery);
+        if (!probadSnapshot.empty) {
+          const probadDocRef = doc(db, "probad", probadSnapshot.docs[0].id);
+          await updateDoc(probadDocRef, {
+            taken: false
+          });
+          console.log(`Reset taken field for probad: ${probadSnapshot.docs[0].id}`);
+        }
+      }
+
+      // Find and lock the next document
+      await findAndLockDocument();
+
+    } catch (error) {
+      console.error("Error removing from evaluation:", error);
+      setError(`Failed to remove from evaluation: ${error.message}`);
+    } finally {
+      setProcessingAction(false);
+    }
   };
 
   // Helper function to check if document is locked and should be skipped
@@ -784,6 +859,20 @@ const Evaluate = () => {
                       <span>Submit All Evaluations</span>
                     </>
                   )}
+                </button>
+                
+                <button
+                  onClick={handleRemoveFromEvaluation}
+                  disabled={processingAction || hasAnyPredictionsFetched(document)}
+                  className={`flex items-center gap-3 rounded-full px-10 py-4 text-lg font-bold transition-all duration-200 transform ${
+                    !hasAnyPredictionsFetched(document) && !processingAction
+                      ? 'bg-gradient-to-r from-red-500 to-pink-600 text-white shadow-lg hover:shadow-xl hover:scale-105'
+                      : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  }`}
+                  title={hasAnyPredictionsFetched(document) ? "Cannot remove: At least one prediction has been fetched" : "Remove this proverb from evaluation set"}
+                >
+                  <Trash2 size={24} />
+                  <span>Remove from Evaluation</span>
                 </button>
               </div>
             </div>

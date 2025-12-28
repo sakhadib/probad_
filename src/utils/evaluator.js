@@ -32,10 +32,15 @@ export const createEvalDocument = async (probad) => {
       cultural_score: null
     }));
 
+    // Store the original probad document ID for reference
+    const probadId = probad.id;
+
     // Add predictions to the probad object
     const evalDoc = {
       ...probad,
-      predictions
+      probad_id: probadId,
+      predictions,
+      status: 'pending'
     };
 
     // Add to 'eval' collection
