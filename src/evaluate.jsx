@@ -413,7 +413,7 @@ const Evaluate = () => {
     }
   };
 
-  // Function to ask all AI models at once
+  // Function to ask all AI models at once (PARALLEL execution)
   const handleAskAll = async () => {
     if (!document || !document.predictions) return;
     
@@ -429,45 +429,78 @@ const Evaluate = () => {
     setBatchProgress({ current: 0, total: modelsToProcess.length });
     setError(null);
 
+    // Set all models to loading state
+    const loadingState = {};
+    modelsToProcess.forEach(pred => {
+      loadingState[pred.model] = true;
+    });
+    setAskLoading(prev => ({ ...prev, ...loadingState }));
+
+    // Fire all API calls in parallel
+    let completed = 0;
+    const promises = modelsToProcess.map(async (pred) => {
+      try {
+        const response = await askModel(pred.model, document.proverb?.text);
+        completed++;
+        setBatchProgress({ current: completed, total: modelsToProcess.length });
+        return { modelId: pred.model, response, success: true };
+      } catch (error) {
+        completed++;
+        setBatchProgress({ current: completed, total: modelsToProcess.length });
+        console.error(`Error for ${pred.model}:`, error);
+        return { modelId: pred.model, error, success: false };
+      }
+    });
+
+    // Wait for all to complete
+    const results = await Promise.all(promises);
+
+    // Build response map
+    const responseMap = {};
     let successCount = 0;
     let failCount = 0;
 
-    for (let i = 0; i < modelsToProcess.length; i++) {
-      const pred = modelsToProcess[i];
-      const modelId = pred.model;
-
-      setBatchProgress({ current: i + 1, total: modelsToProcess.length });
-      setAskLoading(prev => ({ ...prev, [modelId]: true }));
-
-      try {
-        const response = await askModel(modelId, document.proverb?.text);
-        
-        // Update predictions array
-        const updatedPredictions = document.predictions.map(p =>
-          p.model === modelId
-            ? { ...p, prediction: response, fetch: true }
-            : p
-        );
-
-        // Update Firebase
-        await updateDoc(doc(db, "eval", document.id), {
-          predictions: updatedPredictions
-        });
-
-        // Update local state
-        setDocument(prev => ({
-          ...prev,
-          predictions: updatedPredictions
-        }));
-
+    results.forEach(result => {
+      if (result.success) {
+        responseMap[result.modelId] = result.response;
         successCount++;
-      } catch (error) {
-        console.error(`Error getting AI prediction for ${modelId}:`, error);
+      } else {
         failCount++;
-      } finally {
-        setAskLoading(prev => ({ ...prev, [modelId]: false }));
       }
+    });
+
+    // Update predictions in a single pass
+    const updatedPredictions = document.predictions.map(p => {
+      if (responseMap[p.model]) {
+        return { ...p, prediction: responseMap[p.model], fetch: true };
+      }
+      return p;
+    });
+
+    // Update Firebase and local state
+    try {
+      await updateDoc(doc(db, "eval", document.id), {
+        predictions: updatedPredictions
+      });
+
+      // Update local state
+      setDocument(prev => ({
+        ...prev,
+        predictions: updatedPredictions
+      }));
+      
+      console.log("Successfully updated Firebase and state with", successCount, "predictions");
+    } catch (error) {
+      console.error("Error updating Firebase:", error);
+      setError(`Firebase update failed: ${error.message}`);
     }
+
+    // Clear loading states
+    const clearedLoadingState = {};
+    modelsToProcess.forEach(pred => {
+      clearedLoadingState[pred.model] = false;
+    });
+    setAskLoading(prev => ({ ...prev, ...clearedLoadingState }));
 
     setBatchProcessing(false);
     setBatchProgress({ current: 0, total: 0 });
