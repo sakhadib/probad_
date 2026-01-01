@@ -27,7 +27,8 @@ import {
   Heart,
   Globe,
   Brain,
-  Trash2
+  Trash2,
+  Zap
 } from 'lucide-react';
 import { db } from "./firebase/config";
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -44,6 +45,8 @@ const Evaluate = () => {
   const [processingAction, setProcessingAction] = useState(false);
   const [evaluations, setEvaluations] = useState({});
   const [askLoading, setAskLoading] = useState({});
+  const [batchProcessing, setBatchProcessing] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
 
   // Helper function to sanitize email for Firebase document field
   const sanitizeEmail = (email) => {
@@ -410,6 +413,70 @@ const Evaluate = () => {
     }
   };
 
+  // Function to ask all AI models at once
+  const handleAskAll = async () => {
+    if (!document || !document.predictions) return;
+    
+    // Get models that don't have predictions yet
+    const modelsToProcess = document.predictions.filter(pred => !pred.prediction && !pred.fetch);
+    
+    if (modelsToProcess.length === 0) {
+      setError("All models have already been processed");
+      return;
+    }
+
+    setBatchProcessing(true);
+    setBatchProgress({ current: 0, total: modelsToProcess.length });
+    setError(null);
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < modelsToProcess.length; i++) {
+      const pred = modelsToProcess[i];
+      const modelId = pred.model;
+
+      setBatchProgress({ current: i + 1, total: modelsToProcess.length });
+      setAskLoading(prev => ({ ...prev, [modelId]: true }));
+
+      try {
+        const response = await askModel(modelId, document.proverb?.text);
+        
+        // Update predictions array
+        const updatedPredictions = document.predictions.map(p =>
+          p.model === modelId
+            ? { ...p, prediction: response, fetch: true }
+            : p
+        );
+
+        // Update Firebase
+        await updateDoc(doc(db, "eval", document.id), {
+          predictions: updatedPredictions
+        });
+
+        // Update local state
+        setDocument(prev => ({
+          ...prev,
+          predictions: updatedPredictions
+        }));
+
+        successCount++;
+      } catch (error) {
+        console.error(`Error getting AI prediction for ${modelId}:`, error);
+        failCount++;
+      } finally {
+        setAskLoading(prev => ({ ...prev, [modelId]: false }));
+      }
+    }
+
+    setBatchProcessing(false);
+    setBatchProgress({ current: 0, total: 0 });
+
+    if (failCount > 0) {
+      setError(`Completed: ${successCount} succeeded, ${failCount} failed`);
+    }
+  };
+
   // Function to find and lock the next available document
   const findAndLockDocument = async () => {
     try {
@@ -589,6 +656,51 @@ const Evaluate = () => {
           </span>
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-slate-900">Evaluate AI predictions</h1>
           <p className="text-sm md:text-base text-slate-600">Review and score AI model predictions for semantic and cultural accuracy.</p>
+        </div>
+
+        {/* Batch Process Button - Mobile First */}
+        <div className="mb-6">
+          <button
+            onClick={handleAskAll}
+            disabled={batchProcessing || !document}
+            className={`w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-4 rounded-xl text-base font-semibold transition-all duration-200 transform ${
+              batchProcessing
+                ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl hover:scale-105'
+            }`}
+          >
+            {batchProcessing ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-slate-400"></div>
+                <span>সব মডেল থেকে উত্তর আনা হচ্ছে...</span>
+              </>
+            ) : (
+              <>
+                <Zap className="h-5 w-5" />
+                <span>সবগুলো উত্তর একবারে আনুন</span>
+              </>
+            )}
+          </button>
+
+          {/* Progress Bar */}
+          {batchProcessing && batchProgress.total > 0 && (
+            <div className="mt-4 bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+              <div className="flex items-center justify-between mb-2 text-sm">
+                <span className="font-medium text-slate-700">
+                  প্রসেস করা হচ্ছে মডেল {batchProgress.current} / {batchProgress.total}
+                </span>
+                <span className="text-slate-500">
+                  {Math.round((batchProgress.current / batchProgress.total) * 100)}%
+                </span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-300 ease-out rounded-full"
+                  style={{ width: `${(batchProgress.current / batchProgress.total) * 100}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="rounded-2xl border border-gray-200 bg-white p-5 md:p-6 mb-8 shadow-sm hidden md:block">
