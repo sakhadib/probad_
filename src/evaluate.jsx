@@ -417,8 +417,8 @@ const Evaluate = () => {
   const handleAskAll = async () => {
     if (!document || !document.predictions) return;
     
-    // Get models that don't have predictions yet
-    const modelsToProcess = document.predictions.filter(pred => !pred.prediction && !pred.fetch);
+    // Get models that don't have predictions yet (matches singular Ask AI button logic)
+    const modelsToProcess = document.predictions.filter(pred => !pred.prediction);
     
     if (modelsToProcess.length === 0) {
       // All models already processed, silently return
@@ -662,9 +662,9 @@ const Evaluate = () => {
         <div className="mb-6">
           <button
             onClick={handleAskAll}
-            disabled={batchProcessing || !document || (document?.predictions && document.predictions.every(pred => pred.prediction || pred.fetch))}
+            disabled={batchProcessing || !document || (document?.predictions && document.predictions.every(pred => pred.prediction))}
             className={`w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-4 rounded-xl text-base font-semibold transition-all duration-200 transform ${
-              (batchProcessing || (document?.predictions && document.predictions.every(pred => pred.prediction || pred.fetch)))
+              (batchProcessing || (document?.predictions && document.predictions.every(pred => pred.prediction)))
                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
                 : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl hover:scale-105'
             }`}
